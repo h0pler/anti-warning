@@ -1,0 +1,29 @@
+@font-face {
+    font-family: 'IAMAPLAYER';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2307-2@1.0/IAMAPLAYER.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+input {
+    display: block;
+    margin: 2em auto;
+    border: none;
+    padding: 0;
+    width: auto;
+    background: repeating-linear-gradient(
+        90deg,
+        dimgrey 0,
+        dimgrey 1ch,
+        transparent 0,
+        transparent 1.5ch
+    ) 0 100% / 100% 2px no-repeat; 
+    /* font: 5ch droid sans mono, consolas, monospace; */
+    font: 4.5ch 'IAMAPLAYER', monospace;
+    letter-spacing: 0.5ch;
+}
+
+input:focus {
+    outline: none;
+    color: dodgerblue;
+}
