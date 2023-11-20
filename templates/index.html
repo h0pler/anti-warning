@@ -1,6 +1,0 @@
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
-<form action="/proxy" method="get">
-    <input id="url" name="url" value='https://' oninput="this.parentNode.dataset.replica = this.value.replace(/./g, '▮')">
-    <input type="submit" value="Connect">
-</form>
