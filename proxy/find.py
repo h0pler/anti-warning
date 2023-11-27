@@ -165,7 +165,7 @@ async def scrape(method, output, verbose):
 
 
 if __name__ == "__main__":
-    method = "http"  # Default method is http
+    method = "http"
     output = "output.txt"
     verbose = True
 

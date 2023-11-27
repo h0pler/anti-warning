@@ -87,11 +87,12 @@ def check(file, timeout, method, site, verbose, random_user_agent):
 
 
 if __name__ == "__main__":
-    file="output.txt"
+    # python3 check.py -t 20 -s google.com -l output.txt -r -v -p http
     timeout=15
     method="http"
-    site="https://google.com/"
+    site="google.com"
     verbose=True
     random_user_agent=True
+    file="output.txt"
 
     check(file, timeout, method, site, verbose, random_user_agent)
