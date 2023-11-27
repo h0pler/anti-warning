@@ -2,10 +2,15 @@ import random
 import re
 import threading
 import urllib.request
+import os
 from time import time
 
+script_path=os.path.abspath(__file__)
+script_dir=os.path.dirname(script_path)
+user_agents_path=os.path.join(script_dir, "user_agents.txt")
+
 user_agents = []
-with open("user_agents.txt", "r") as f:
+with open(user_agents_path, "r") as f:
     for line in f:
         user_agents.append(line.replace("\n", ""))
 
@@ -85,7 +90,6 @@ def check(file, timeout, method, site, verbose, random_user_agent):
 
     print(f"Found {len(valid_proxies)} valid proxies")
 
-
 if __name__ == "__main__":
     # python3 check.py -t 20 -s google.com -l output.txt -r -v -p http
     timeout=15
@@ -94,5 +98,4 @@ if __name__ == "__main__":
     verbose=True
     random_user_agent=True
     file="output.txt"
-
     check(file, timeout, method, site, verbose, random_user_agent)
