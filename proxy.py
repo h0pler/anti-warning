@@ -33,8 +33,8 @@ def get():
         loop.run_until_complete(scrape(method, output, verbose, logfile))
         loop.close()
 
-    dedupe.dedupe(file, logfile)
-    check.check(file, timeout, method, site, verbose, random_user_agent, logfile)
+    asyncio.run(dedupe.dedupe(file, logfile))
+    asyncio.run(check.check(file, timeout, method, site, verbose, random_user_agent, logfile))
 
     end_time = time.time()
     total_runtime = end_time - start_time

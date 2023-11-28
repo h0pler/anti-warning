@@ -1,24 +1,25 @@
-def log_print(verbose, message, logfile):
-    if verbose:
-        # print(message)
-        with open(logfile, "a") as file:
-            file.write("[DEDUPE]  " + message + "\n")
+import asyncio
+import aiofiles
 
-def dedupe(file, logfile):
+async def log_print(verbose, message, logfile):
+    if verbose:
+        async with aiofiles.open(logfile, "a") as file:
+            await file.write("[DEDUPE]  " + message + "\n")
+
+async def dedupe(file, logfile):
     proxies = []
     duplicates = 0
-    with open(file, "r") as f:
-        for line in f:
+    async with aiofiles.open(file, "r") as f:
+        async for line in f:
             proxy = line.replace("\n", "")
             if proxy not in proxies:
                 proxies.append(proxy)
             else:
                 duplicates += 1
-    with open(file, "w") as f:  
+    async with aiofiles.open(file, "w") as f:  
         for proxy in proxies:
-            f.write(proxy + "\n")
-    # print(f"Removed {duplicates} duplicates")
-    log_print(True, "Removed {duplicates} duplicates", logfile)
+            await f.write(proxy + "\n")
+    await log_print(True, f"Removed {duplicates} duplicates", logfile)
 
 if __name__ == "__main__":
-    dedupe("output.txt")
+    asyncio.run(dedupe("output.txt", "logfile.txt"))
