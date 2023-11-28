@@ -9,7 +9,6 @@ from bs4 import BeautifulSoup
 
 
 class Scraper:
-
     def __init__(self, method, _url):
         self.method = method
         self._url = _url
@@ -32,12 +31,17 @@ class Scraper:
 
 # From spys.me
 class SpysMeScraper(Scraper):
-
     def __init__(self, method):
         super().__init__(method, "https://spys.me/{mode}.txt")
 
     def get_url(self, **kwargs):
-        mode = "proxy" if self.method == "http" else "socks" if self.method == "socks" else "unknown"
+        mode = (
+            "proxy"
+            if self.method == "http"
+            else "socks"
+            if self.method == "socks"
+            else "unknown"
+        )
         if mode == "unknown":
             raise NotImplementedError
         return super().get_url(mode=mode, **kwargs)
@@ -45,43 +49,57 @@ class SpysMeScraper(Scraper):
 
 # From proxyscrape.com
 class ProxyScrapeScraper(Scraper):
-
     def __init__(self, method, timeout=1000, country="All"):
         self.timout = timeout
         self.country = country
-        super().__init__(method,
-                         "https://api.proxyscrape.com/?request=getproxies"
-                         "&proxytype={method}"
-                         "&timeout={timout}"
-                         "&country={country}")
+        super().__init__(
+            method,
+            "https://api.proxyscrape.com/?request=getproxies"
+            "&proxytype={method}"
+            "&timeout={timout}"
+            "&country={country}",
+        )
 
     def get_url(self, **kwargs):
         return super().get_url(timout=self.timout, country=self.country, **kwargs)
 
+
 # From geonode.com - A little dirty, grab http(s) and socks but use just for socks
 class GeoNodeScraper(Scraper):
-
-    def __init__(self, method, limit="500", page="1", sort_by="lastChecked", sort_type="desc"):
+    def __init__(
+        self, method, limit="500", page="1", sort_by="lastChecked", sort_type="desc"
+    ):
         self.limit = limit
         self.page = page
         self.sort_by = sort_by
         self.sort_type = sort_type
-        super().__init__(method,
-                         "https://proxylist.geonode.com/api/proxy-list?"
-                         "&limit={limit}"
-                         "&page={page}"
-                         "&sort_by={sort_by}"
-                         "&sort_type={sort_type}")
+        super().__init__(
+            method,
+            "https://proxylist.geonode.com/api/proxy-list?"
+            "&limit={limit}"
+            "&page={page}"
+            "&sort_by={sort_by}"
+            "&sort_type={sort_type}",
+        )
 
     def get_url(self, **kwargs):
-        return super().get_url(limit=self.limit, page=self.page, sort_by=self.sort_by, sort_type=self.sort_type, **kwargs)
+        return super().get_url(
+            limit=self.limit,
+            page=self.page,
+            sort_by=self.sort_by,
+            sort_type=self.sort_type,
+            **kwargs,
+        )
+
 
 # From proxy-list.download
 class ProxyListDownloadScraper(Scraper):
-
     def __init__(self, method, anon):
         self.anon = anon
-        super().__init__(method, "https://www.proxy-list.download/api/v1/get?type={method}&anon={anon}")
+        super().__init__(
+            method,
+            "https://www.proxy-list.download/api/v1/get?type={method}&anon={anon}",
+        )
 
     def get_url(self, **kwargs):
         return super().get_url(anon=self.anon, **kwargs)
@@ -89,11 +107,12 @@ class ProxyListDownloadScraper(Scraper):
 
 # For websites using table in html
 class GeneralTableScraper(Scraper):
-
     async def handle(self, response):
         soup = BeautifulSoup(response.text, "html.parser")
         proxies = set()
-        table = soup.find("table", attrs={"class": "table table-striped table-bordered"})
+        table = soup.find(
+            "table", attrs={"class": "table table-striped table-bordered"}
+        )
         for row in table.findAll("tr"):
             count = 0
             proxy = ""
@@ -125,12 +144,15 @@ scrapers = [
 ]
 
 
-def verbose_print(verbose, message):
+def log_print(verbose, message, logfile):
     if verbose:
-        print(message)
+        # print(message)
+        with open(logfile, "a") as file:
+            file.write("[FIND]  " + message + "\n")
+        
 
 
-async def scrape(method, output, verbose):
+async def scrape(method, output, verbose, logfile):
     now = time.time()
     methods = [method]
     if method == "socks":
@@ -138,7 +160,7 @@ async def scrape(method, output, verbose):
     proxy_scrapers = [s for s in scrapers if s.method in methods]
     if not proxy_scrapers:
         raise ValueError("Method not supported")
-    verbose_print(verbose, "Scraping proxies...")
+    log_print(verbose, "Scraping proxies...", logfile)
     proxies = []
 
     tasks = []
@@ -146,7 +168,7 @@ async def scrape(method, output, verbose):
 
     async def scrape_scraper(scraper):
         try:
-            verbose_print(verbose, f"Looking {scraper.get_url()}...")
+            log_print(verbose, f"Looking {scraper.get_url()}...", logfile)
             proxies.extend(await scraper.scrape(client))
         except Exception:
             pass
@@ -157,11 +179,11 @@ async def scrape(method, output, verbose):
     await asyncio.gather(*tasks)
     await client.aclose()
 
-    verbose_print(verbose, f"Writing {len(proxies)} proxies to file...")
+    log_print(verbose, f"Writing {len(proxies)} proxies to file...", logfile)
     with open(output, "w") as f:
         f.write("\n".join(proxies))
-    verbose_print(verbose, "Done!")
-    verbose_print(verbose, f"Took {time.time() - now} seconds")
+    log_print(verbose, "Done!", logfile)
+    log_print(verbose, f"Took {time.time() - now} seconds", logfile)
 
 
 if __name__ == "__main__":
@@ -169,7 +191,7 @@ if __name__ == "__main__":
     output = "output.txt"
     verbose = True
 
-    if sys.version_info >= (3, 7) and platform.system() == 'Windows':
+    if sys.version_info >= (3, 7) and platform.system() == "Windows":
         loop = asyncio.get_event_loop()
         loop.run_until_complete(scrape(method, output, verbose))
         loop.close()

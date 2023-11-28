@@ -5,9 +5,9 @@ import urllib.request
 import os
 from time import time
 
-script_path=os.path.abspath(__file__)
-script_dir=os.path.dirname(script_path)
-user_agents_path=os.path.join(script_dir, "user_agents.txt")
+script_path = os.path.abspath(__file__)
+script_dir = os.path.dirname(script_path)
+user_agents_path = os.path.join(script_dir, "user_agents.txt")
 
 user_agents = []
 with open(user_agents_path, "r") as f:
@@ -45,18 +45,22 @@ class Proxy:
         return self.proxy
 
 
-def verbose_print(verbose, message):
+def log_print(verbose, message, logfile):
     if verbose:
-        print(message)
+        # print(message)
+        with open(logfile, "a") as file:
+            file.write("[CHECK]  " + message + "\n")
 
 
-def check(file, timeout, method, site, verbose, random_user_agent):
+def check(file, timeout, method, site, verbose, random_user_agent, logfile):
     proxies = []
     with open(file, "r") as f:
         for line in f:
             proxies.append(Proxy(method, line.replace("\n", "")))
 
-    print(f"Checking {len(proxies)} proxies")
+    # print(f"Checking {len(proxies)} proxies")
+    log_print(verbose, f"Checking {len(proxies)} proxies", logfile)
+
     proxies = filter(lambda x: x.is_valid(), proxies)
     valid_proxies = []
     user_agent = random.choice(user_agents)
@@ -70,7 +74,7 @@ def check(file, timeout, method, site, verbose, random_user_agent):
             True: f"{proxy} is valid, took {time_taken} seconds",
             False: f"{proxy} is invalid: {repr(error)}",
         }[valid]
-        verbose_print(verbose, message)
+        log_print(verbose, message, logfile)
         valid_proxies.extend([proxy] if valid else [])
 
     threads = []
@@ -88,14 +92,16 @@ def check(file, timeout, method, site, verbose, random_user_agent):
         for proxy in valid_proxies:
             f.write(str(proxy) + "\n")
 
-    print(f"Found {len(valid_proxies)} valid proxies")
+    #print(f"Found {len(valid_proxies)} valid proxies")
+    log_print(verbose, f"Found {len(valid_proxies)} valid proxies", logfile)
+
 
 if __name__ == "__main__":
     # python3 check.py -t 20 -s google.com -l output.txt -r -v -p http
-    timeout=15
-    method="http"
-    site="google.com"
-    verbose=True
-    random_user_agent=True
-    file="output.txt"
+    timeout = 15
+    method = "http"
+    site = "google.com"
+    verbose = True
+    random_user_agent = True
+    file = "output.txt"
     check(file, timeout, method, site, verbose, random_user_agent)
