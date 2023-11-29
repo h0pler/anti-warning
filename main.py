@@ -1,8 +1,8 @@
 import asyncio
 import ssl
 import asyncio
-
 import proxymaster
+import logmaster
 
 
 def modify_request(request_data):
@@ -13,13 +13,12 @@ def modify_request(request_data):
     )
     return modified_request.encode("utf-8")
 
+
 async def relay_data(reader, writer, data_size=float("inf"), response=False):
     try:
         total_data = b""
         while data_size > 0:
-            data = await asyncio.wait_for(
-                reader.read(min(4096, data_size)), timeout=10
-            )
+            data = await asyncio.wait_for(reader.read(min(4096, data_size)), timeout=10)
             if not data:
                 break
             total_data += data
@@ -32,13 +31,14 @@ async def relay_data(reader, writer, data_size=float("inf"), response=False):
     except asyncio.CancelledError:
         pass
     except ConnectionResetError as e:
-        print(f"Connection reset by peer: {e}")
+        await logmaster.log_print("[CONN_RESET]", f"Connection reset by peer: {e}")
     except asyncio.TimeoutError as e:
-        print(f"Timeout in relay_data: {e}")
+        await logmaster.log_print("[TIMEOUT]", f"Timeout in relay_data: {e}")
     except Exception as e:
-        print(f"Error in relay_data: {e}")
+        await logmaster.log_print("[ERROR]", f"Error in relay_data: {e}")
     finally:
         writer.close()
+
 
 async def handle_connect_method(reader, writer, proxy_host, proxy_port):
     try:
@@ -81,7 +81,8 @@ async def handle_connect_method(reader, writer, proxy_host, proxy_port):
             )
 
     except Exception as e:
-        print(f"Error in handle_connect_method: {e}")
+        await logmaster.log_print("[ERROR]", f"Error in handle_connect_method: {e}")
+
 
 async def handle_client(reader, writer, proxy_host, proxy_port):
     try:
@@ -95,7 +96,9 @@ async def handle_client(reader, writer, proxy_host, proxy_port):
             if b"\r\n\r\n" in client_request:
                 break
 
-        print("Received client request: ", client_request.decode("utf-8"))
+        await logmaster.log_print(
+            "[CLIENT_REQ]", f"Received client request: {client_request.decode('utf-8')}"
+        )
 
         first_line = client_request.decode().split("\r\n")[0]
         method, _, _ = first_line.partition(" ")
@@ -121,35 +124,37 @@ async def handle_client(reader, writer, proxy_host, proxy_port):
             destination_reader, destination_writer = await asyncio.open_connection(
                 proxy_host, proxy_port
             )
-            print("Connected")
+
+            await logmaster.log_print("[CONNECTED]", "Connected")
         except Exception as e:
-            print(f"Failed to connect to proxy: {e}")
+            await logmaster.log_print("[ERROR]", f"Failed to connect to proxy: {e}")
             writer.close()
             return
 
-        print(f"Modified: {modified_request}")
+        await logmaster.log_print("[MODIFIED_REQ]", f"Modified: {modified_request}")
         destination_writer.write(modified_request)
         await destination_writer.drain()
         await relay_data(destination_reader, writer, response=True)
 
     except asyncio.CancelledError:
-        print("cancelled")
+        await logmaster.log_print("[CANCELLED]", "Cancelled")
         pass
     except ConnectionResetError as e:
-        print(f"Connection reset by peer: {e}")
+        await logmaster.log_print("[CONN_RESET]", f"Connection reset by peer: {e}")
         writer.close()
     except Exception as e:
-        print(f"Error in handle_client: {e}")
+        await logmaster.log_print("[ERROR]", f"Error in handle_client: {e}")
     finally:
         writer.close()
 
-async def proxy_server():
+
+async def proxy_server(server_port):
     proxy = await proxymaster.get()
     proxy_host = proxy[0]
     proxy_port = proxy[1]
 
     server_host = "0.0.0.0"
-    server_port = 10000
+
     print(f"{proxy_host}:{proxy_port}")
     server = await asyncio.start_server(
         lambda reader, writer: asyncio.ensure_future(
@@ -168,12 +173,14 @@ async def proxy_server():
             async with server:
                 await server.serve_forever()
         except Exception as e:
-            print(f"Error in proxy_server: {e}")
+            await logmaster.log_print("[ERROR]", f"Error in proxy_server: {e}")
 
     await asyncio.create_task(serve())
 
+
 async def main():
-    proxy_task = asyncio.create_task(proxy_server())
+    server_port = int(input("Enter port: "))
+    proxy_task = asyncio.create_task(proxy_server(server_port))
     await proxy_task
 
 

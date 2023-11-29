@@ -3,9 +3,10 @@ import platform
 import re
 import sys
 import time
-
 import httpx
 from bs4 import BeautifulSoup
+
+import logmaster
 
 
 class Scraper:
@@ -144,15 +145,7 @@ scrapers = [
 ]
 
 
-def log_print(verbose, message, logfile):
-    if verbose:
-        # print(message)
-        with open(logfile, "a") as file:
-            file.write("[FIND]  " + message + "\n")
-        
-
-
-async def scrape(method, output, verbose, logfile):
+async def scrape(method, output):
     now = time.time()
     methods = [method]
     if method == "socks":
@@ -160,7 +153,7 @@ async def scrape(method, output, verbose, logfile):
     proxy_scrapers = [s for s in scrapers if s.method in methods]
     if not proxy_scrapers:
         raise ValueError("Method not supported")
-    log_print(verbose, "Scraping proxies...", logfile)
+    await logmaster.log_print("[FIND]", "Scraping proxies...")
     proxies = []
 
     tasks = []
@@ -168,7 +161,7 @@ async def scrape(method, output, verbose, logfile):
 
     async def scrape_scraper(scraper):
         try:
-            log_print(verbose, f"Looking {scraper.get_url()}...", logfile)
+            await logmaster.log_print("[FIND]", f"Looking {scraper.get_url()}...")
             proxies.extend(await scraper.scrape(client))
         except Exception:
             pass
@@ -179,25 +172,24 @@ async def scrape(method, output, verbose, logfile):
     await asyncio.gather(*tasks)
     await client.aclose()
 
-    log_print(verbose, f"Writing {len(proxies)} proxies to file...", logfile)
+    await logmaster.log_print("[FIND]", f"Writing {len(proxies)} proxies to file...")
     with open(output, "w") as f:
         f.write("\n".join(proxies))
-    log_print(verbose, "Done!", logfile)
-    log_print(verbose, f"Took {time.time() - now} seconds", logfile)
+    await logmaster.log_print("[FIND]", "Done!")
+    await logmaster.log_print("[FIND]", f"Took {time.time() - now} seconds")
 
 
 if __name__ == "__main__":
     method = "http"
     output = "output.txt"
-    verbose = True
 
     if sys.version_info >= (3, 7) and platform.system() == "Windows":
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(scrape(method, output, verbose))
+        loop.run_until_complete(scrape(method, output))
         loop.close()
     elif sys.version_info >= (3, 7):
-        asyncio.run(scrape(method, output, verbose))
+        asyncio.run(scrape(method, output))
     else:
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(scrape(method, output, verbose))
+        loop.run_until_complete(scrape(method, output))
         loop.close()

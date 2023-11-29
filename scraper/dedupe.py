@@ -1,12 +1,9 @@
 import asyncio
 import aiofiles
+import logmaster
 
-async def log_print(verbose, message, logfile):
-    if verbose:
-        async with aiofiles.open(logfile, "a") as file:
-            await file.write("[DEDUPE]  " + message + "\n")
 
-async def dedupe(file, logfile):
+async def dedupe(file):
     proxies = []
     duplicates = 0
     async with aiofiles.open(file, "r") as f:
@@ -16,10 +13,11 @@ async def dedupe(file, logfile):
                 proxies.append(proxy)
             else:
                 duplicates += 1
-    async with aiofiles.open(file, "w") as f:  
+    async with aiofiles.open(file, "w") as f:
         for proxy in proxies:
             await f.write(proxy + "\n")
-    await log_print(True, f"Removed {duplicates} duplicates", logfile)
+    await logmaster.log_print("[DEDUPE]", f"Removed {duplicates} duplicates")
+
 
 if __name__ == "__main__":
-    asyncio.run(dedupe("output.txt", "logfile.txt"))
+    asyncio.run(dedupe("output.txt"))

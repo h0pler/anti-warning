@@ -1,12 +1,10 @@
 import random
 import re
-import threading
-import urllib.request
 import os
 from time import time
 import asyncio
-import aiofiles
 import aiohttp
+import logmaster
 
 script_path = os.path.abspath(__file__)
 script_dir = os.path.dirname(script_path)
@@ -33,7 +31,12 @@ class Proxy:
         async with aiohttp.ClientSession() as session:
             try:
                 start_time = time()
-                async with session.get(self.method + "://" + site, headers={"User-Agent": user_agent}, proxy=url, timeout=timeout) as response:
+                async with session.get(
+                    self.method + "://" + site,
+                    headers={"User-Agent": user_agent},
+                    proxy=url,
+                    timeout=timeout,
+                ) as response:
                     end_time = time()
                     time_taken = end_time - start_time
                     return True, time_taken, None
@@ -44,13 +47,9 @@ class Proxy:
         return self.proxy
 
 
-async def log_print(verbose, message, logfile):
-    if verbose:
-        async with aiofiles.open(logfile, "a") as file:
-            await file.write("[CHECK]  " + message + "\n")
-
-
-async def check_proxy(proxy, user_agent, site, timeout, random_user_agent, verbose, logfile, valid_proxies):
+async def check_proxy(
+    proxy, user_agent, site, timeout, random_user_agent, valid_proxies
+):
     new_user_agent = user_agent
     if random_user_agent:
         new_user_agent = random.choice(user_agents)
@@ -59,18 +58,18 @@ async def check_proxy(proxy, user_agent, site, timeout, random_user_agent, verbo
         True: f"{proxy} is valid, took {time_taken} seconds",
         False: f"{proxy} is invalid: {repr(error)}",
     }[valid]
-    await log_print(verbose, message, logfile)
+    await logmaster.log_print("[CHECK]", message)
     if valid:
         valid_proxies.append(proxy)
 
 
-async def check(file, timeout, method, site, verbose, random_user_agent, logfile):
+async def check(file, timeout, method, site, random_user_agent):
     proxies = []
     with open(file, "r") as f:
         for line in f:
             proxies.append(Proxy(method, line.replace("\n", "")))
 
-    await log_print(verbose, f"Checking {len(proxies)} proxies", logfile)
+    await logmaster.log_print("[CHECK]", f"Checking {len(proxies)} proxies")
 
     proxies = filter(lambda x: x.is_valid(), proxies)
     valid_proxies = []
@@ -78,7 +77,11 @@ async def check(file, timeout, method, site, verbose, random_user_agent, logfile
 
     tasks = []
     for proxy in proxies:
-        task = asyncio.create_task(check_proxy(proxy, user_agent, site, timeout, random_user_agent, verbose, logfile, valid_proxies))
+        task = asyncio.create_task(
+            check_proxy(
+                proxy, user_agent, site, timeout, random_user_agent, valid_proxies
+            )
+        )
         tasks.append(task)
 
     await asyncio.gather(*tasks)
@@ -87,17 +90,14 @@ async def check(file, timeout, method, site, verbose, random_user_agent, logfile
         for proxy in valid_proxies:
             f.write(str(proxy) + "\n")
 
-    await log_print(verbose, f"Found {len(valid_proxies)} valid proxies", logfile)
+    await logmaster.log_print("[CHECK]", f"Found {len(valid_proxies)} valid proxies")
 
 
 if __name__ == "__main__":
-    # python3 check.py -t 20 -s google.com -l output.txt -r -v -p http
-    timeout = 15
+    timeout = 10
     method = "http"
     site = "google.com"
-    verbose = True
     random_user_agent = True
     file = "output.txt"
-    logfile = "log.txt"  # Define the logfile variable with the desired file path
 
-    asyncio.run(check(file, timeout, method, site, verbose, random_user_agent, logfile))
+    asyncio.run(check(file, timeout, method, site, random_user_agent))
