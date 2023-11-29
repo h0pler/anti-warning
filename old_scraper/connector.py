@@ -7,7 +7,7 @@ from time import time
 import asyncio
 import aiofiles
 import aiohttp
-import scraper.agent
+import old_scraper.agent
 
 script_path = os.path.abspath(__file__)
 script_dir = os.path.dirname(script_path)
@@ -54,7 +54,7 @@ async def log_print(verbose, message, logfile):
 async def check_proxy(proxy, user_agent, site, timeout, random_user_agent, verbose, logfile, valid_proxies):
     new_user_agent = user_agent
     if random_user_agent:
-        new_user_agent = scraper.agent.get()
+        new_user_agent = old_scraper.agent.get()
     try:
         valid, time_taken, error = await proxy.check(site, timeout, new_user_agent)
     except AttributeError as e:
@@ -79,7 +79,7 @@ async def check(file, timeout, method, site, verbose, random_user_agent, logfile
 
     proxies = filter(lambda x: x.is_valid(), proxies)
     valid_proxies = []
-    user_agent = scraper.agent.get()
+    user_agent = old_scraper.agent.get()
 
     tasks = []
     for proxy in proxies:
