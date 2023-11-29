@@ -170,8 +170,11 @@ cython_debug/
 proxy/output.txt
 proxy-scraper/
 */__pycache__
-proxies.txt
+
 venv/
+
 logs.txt
+proxies.txt
+output.txt
 
 # End of https://www.toptal.com/developers/gitignore/api/flask
