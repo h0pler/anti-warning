@@ -7,15 +7,16 @@ from time import time
 import asyncio
 import aiofiles
 import aiohttp
+import scraper.agent
 
 script_path = os.path.abspath(__file__)
 script_dir = os.path.dirname(script_path)
-user_agents_path = os.path.join(script_dir, "user_agents.txt")
+# user_agents_path = os.path.join(script_dir, "user_agents.txt")
 
-user_agents = []
-with open(user_agents_path, "r") as f:
-    for line in f:
-        user_agents.append(line.replace("\n", ""))
+# user_agents = []
+# with open(user_agents_path, "r") as f:
+#     for line in f:
+#         user_agents.append(line.replace("\n", ""))
 
 
 class Proxy:
@@ -53,8 +54,11 @@ async def log_print(verbose, message, logfile):
 async def check_proxy(proxy, user_agent, site, timeout, random_user_agent, verbose, logfile, valid_proxies):
     new_user_agent = user_agent
     if random_user_agent:
-        new_user_agent = random.choice(user_agents)
-    valid, time_taken, error = await proxy.check(site, timeout, new_user_agent)
+        new_user_agent = scraper.agent.get()
+    try:
+        valid, time_taken, error = await proxy.check(site, timeout, new_user_agent)
+    except AttributeError as e:
+        valid, time_taken, error = await Proxy.proxy.check(site, timeout, new_user_agent)
     message = {
         True: f"{proxy} is valid, took {time_taken} seconds",
         False: f"{proxy} is invalid: {repr(error)}",
@@ -62,6 +66,7 @@ async def check_proxy(proxy, user_agent, site, timeout, random_user_agent, verbo
     await log_print(verbose, message, logfile)
     if valid:
         valid_proxies.append(proxy)
+    return valid_proxies
 
 
 async def check(file, timeout, method, site, verbose, random_user_agent, logfile):
@@ -74,7 +79,7 @@ async def check(file, timeout, method, site, verbose, random_user_agent, logfile
 
     proxies = filter(lambda x: x.is_valid(), proxies)
     valid_proxies = []
-    user_agent = random.choice(user_agents)
+    user_agent = scraper.agent.get()
 
     tasks = []
     for proxy in proxies:
@@ -90,14 +95,15 @@ async def check(file, timeout, method, site, verbose, random_user_agent, logfile
     await log_print(verbose, f"Found {len(valid_proxies)} valid proxies", logfile)
 
 
-if __name__ == "__main__":
-    # python3 check.py -t 20 -s google.com -l output.txt -r -v -p http
-    timeout = 15
-    method = "http"
-    site = "google.com"
-    verbose = True
-    random_user_agent = True
-    file = "output.txt"
-    logfile = "log.txt"  # Define the logfile variable with the desired file path
 
-    asyncio.run(check(file, timeout, method, site, verbose, random_user_agent, logfile))
+# if __name__ == "__main__":
+#     # python3 check.py -t 20 -s google.com -l output.txt -r -v -p http
+#     timeout = 15
+#     method = "http"
+#     site = "google.com"
+#     verbose = True
+#     random_user_agent = True
+#     file = "output.txt"
+#     logfile = "log.txt"  # Define the logfile variable with the desired file path
+
+#     asyncio.run(check(file, timeout, method, site, verbose, random_user_agent, logfile))
