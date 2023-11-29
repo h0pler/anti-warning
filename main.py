@@ -144,7 +144,6 @@ async def handle_client(reader, writer, proxy_host, proxy_port):
         writer.close()
 
 async def proxy_server():
-    # while True:
     proxy = await proxymaster.get()
     proxy_host = proxy[0]
     proxy_port = proxy[1]
@@ -173,25 +172,6 @@ async def proxy_server():
 
     await asyncio.create_task(serve())
 
-
-# async def async_scrape():
-#     await old_scraper.scrap.scrape(method, file, verbose)
-#     await old_scraper.connector.check(file, timeout, method, site, verbose, True, output)
-
-# def sync_scrape():
-#     loop = asyncio.new_event_loop()
-#     asyncio.set_event_loop(loop)
-#     loop.run_until_complete(async_scrape())
-#     loop.close()
-
-
-async def handle_user_input():
-    while True:
-        user_input = input("Press 'q' to quit: ")
-        if user_input.lower() == "q":
-            break
-
-
 async def main():
     proxy_task = asyncio.create_task(proxy_server())
     await proxy_task
@@ -199,7 +179,6 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        # sync_scrape()
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
