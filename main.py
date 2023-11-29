@@ -18,7 +18,7 @@ async def relay_data(reader, writer, data_size=float("inf"), response=False):
         total_data = b""
         while data_size > 0:
             data = await asyncio.wait_for(
-                reader.read(min(4096, data_size)), timeout=30.0
+                reader.read(min(4096, data_size)), timeout=10
             )
             if not data:
                 break
