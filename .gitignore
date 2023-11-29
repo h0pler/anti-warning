@@ -637,8 +637,8 @@ logs.txt
 proxies.txt
 output.txt
 
+logs/
 logs/*
-!logs/ILoveYou.log
 
 # End of https://www.toptal.com/developers/gitignore/api/linux,vs,python,flask
 
