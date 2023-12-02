@@ -1,0 +1,19 @@
+# woojin
+
+venv/
+*/venv/
+
+__pycache__/
+*/__pycache__/
+
+output.txt
+*/output.txt
+
+logs.txt
+*/logs.txt
+
+proxies.txt
+*/proxies.txt
+
+*.logs
+logs/*.log
